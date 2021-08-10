@@ -22,7 +22,6 @@ class ChessEngine:
             'R': -500,
             'Q': -960,
             'K': -200000000,
-            ' ': 0
         }
 
     def create_representation_for_eval(self, board): #translate board object into representation eval function needs
@@ -47,6 +46,19 @@ class ChessEngine:
 
         return eval_board
 
+    """
+    def store_piece_locations(self, eval_board):
+        piece_locs = []
+
+        for i in range(8):
+            for j in range(8):
+                if eval_board[i][j] != ' ':
+                    piece_locs.append([eval_board[i][j]], i, j)
+
+        self.piece_locs = piece_locs
+
+    """
+
     def eval(self, eval_board, board):
         if board.is_checkmate():
             if board.turn == False:
@@ -55,13 +67,14 @@ class ChessEngine:
             else:
                 return 200000000
 
-        if board.is_stalemate():
+        elif board.is_stalemate():
             return self.contempt
 
         evaluation = 0
         for i in range(8):
             for j in range(8):
-                evaluation += self.values[eval_board[i][j]]
+                if eval_board[i][j] != ' ':
+                    evaluation += self.values[eval_board[i][j]]
 
         return evaluation
 
@@ -74,39 +87,56 @@ class ChessEngine:
             for entry in reader.find_all(board):
                 print(entry.move, entry.weight, entry.learn)
 
-    def alphabeta(self, board, depth):
+    def alphabeta(self, board, depth, alpha, beta):
         moves = self.feed_moves(board)
-
         if depth == 0 or len(moves) == 0:
             return self.eval(self.create_representation_for_eval(board), board)
+        
+        if board.turn == True:
+            max_eval = -225000000
+            for move in moves:
+                board.push(move)
+                evaluation = self.alphabeta(board, depth - 1, alpha, beta)
+                board.pop()
+                max_eval = max(max_eval, evaluation)
+                alpha = max(alpha, evaluation)
+                if beta <= alpha:
+                    break
 
-        if board.is_insufficient_material():
-            return self.contempt
-
-        initial_board = copy.deepcopy(board)
-        move_scores = []
-
-        for move in moves:
-            board.push(move)
-            move_scores.append(self.alphabeta(board, depth - 1))
-            board = copy.deepcopy(initial_board)
- 
-        if board.turn == False and depth == self.initial_depth:
-            return (moves[move_scores.index(max(move_scores))], max(move_scores))
-
-
-        elif board.turn == True: 
-            return min(move_scores)
+            return max_eval
 
         else:
-            return max(move_scores)
+            min_eval = 225000000
+            for move in moves:
+                board.push(move)
+                evaluation = self.alphabeta(board, depth - 1, alpha, beta)
+                board.pop()
+                min_eval = min(min_eval, evaluation)
+                alpha = min(beta, evaluation)
+                if beta <= alpha:
+                    break
+
+            return min_eval
+
+    def choose_move(self, board):
+        moves = self.feed_moves(board)
+        evals = []
+        for move in moves:
+            board.push(move)
+            evals.append(self.alphabeta(self.board, self.initial_depth - 1,  -225000000,  225000000))
+            board.pop()
+
+        return moves[evals.index(max(evals))], max(evals)
 
     def run(self):
-        #print(self.opening(self.board))
-        return self.alphabeta(copy.deepcopy(self.board), self.initial_depth)
+        return self.choose_move(self.board)
 
     def make_move(self, move):
         self.board.push(move)
+
+    def undo_move(self):
+        self.board.pop()
+        
 
 if __name__ == '__main__':
     engine = ChessEngine(chess.Board(), 3, -10)
