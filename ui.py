@@ -20,13 +20,15 @@ while board.outcome() == None: #repeat until the game reaches win/loss/draw
     if move in [str(legal_move) for legal_move in list(board.legal_moves)]: #check if move is legal
         move = chess.Move.from_uci(move) #Convert input string to Move object
         board.push(move) #make move
+        print(board.fen())
         start = time.perf_counter()
         engine_output = chess_engine.run()
         print('Time Taken: ' + str(time.perf_counter() - start))
-        print('Engine Eval: ' + str(-engine_output[1]))
+        print('Engine Eval: ' + str(-engine_output[1] / 100))
         #stockfish.set_fen_position(str(board.fen()))
         #board.push(chess.Move.from_uci(stockfish.get_best_move_time(1500)))
         board.push(engine_output[0])
+        print(board.fen())
     
     else: #if move is not legal
         print('Invalid Move')
