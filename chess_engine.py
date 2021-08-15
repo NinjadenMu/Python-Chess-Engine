@@ -15,16 +15,16 @@ class ChessEngine:
             'b': 325,
             'r': 500,
             'q': 960,
-            'k': 200000000,
+            'k': 20000,
             'P': -100,
             'N': -320,
             'B': -325,
             'R': -500,
             'Q': -960,
-            'K': -200000000,
+            'K': -20000,
         }
         self.opening = True
-        self.white_pst = {
+        self.opst = {
             'P': ((0,   0,   0,   0,   0,   0,   0,   0),
                 (78,  83,  86,  73, 102,  82,  85,  90),
                 (7,  29,  21,  44,  40,  31,  44,   7),
@@ -73,56 +73,16 @@ class ChessEngine:
                 (-47, -42, -43, -79, -64, -32, -29, -32),
                 (-4,   3, -14, -50, -57, -18,  13,   4),
                 (17,  30,  -3, -14,   6,  -1,  40,  18)),
-        } #pst stands for piece square tables
+        } #opst stands for opening piece square tables
 
-        self.black_pst = {'p': ((0, 0, 0, 0, 0, 0, 0, 0), 
-                        (-31, 3, -14, -36, -37, -7, 8, -31), 
-                        (-19, 3, -2, -10, -11, 5, 9, -22), 
-                        (-23, 0, 1, 6, 9, 10, 3, -26), 
-                        (-13, 15, 0, 14, 15, -2, 16, -17), 
-                        (7, 44, 31, 40, 44, 21, 29, 7), 
-                        (90, 85, 82, 102, 73, 86, 83, 78), 
-                        (0, 0, 0, 0, 0, 0, 0, 0)), 
-                        'n': ((-69, -22, -35, -19, -24, -26, -23, -74), 
-                        (-20, -23, 0, 2, 0, 2, -15, -23), 
-                        (-14, 11, 15, 18, 22, 13, 10, -18), 
-                        (0, 2, 35, 22, 21, 31, 5, -1), 
-                        (17, 25, 41, 33, 37, 45, 24, 24), 
-                        (-2, 62, 27, 73, 74, 1, 67, 10),
-                        (-14, -4, 62, 4, -36, 100, -6, -3), 
-                        (-70, -58, -55, -10, -75, -75, -53, -66)), 
-                        'b': ((-10, -10, -15, -14, -12, -15, 2, -7), 
-                        (16, 20, 6, 7, 6, 11, 20, 19), 
-                        (15, 20, 25, 8, 15, 24, 25, 14), 
-                        (7, 0, 16, 17, 23, 17, 10, 13), 
-                        (10, 15, 25, 26, 34, 20, 17, 25), 
-                        (-14, 28, -10, 52, 41, -32, 39, -9), 
-                        (-22, 2, 31, -39, -42, 35, 20, -11), 
-                        (-50, -37, -107, -23, -76, -82, -78, -59)), 
-                        'r': ((-32, -31, -18, -2, 5, -18, -24, -30), 
-                        (-53, -44, -43, -29, -26, -31, -38, -53), 
-                        (-46, -26, -35, -25, -25, -42, -28, -42), 
-                        (-30, -46, -29, -13, -21, -16, -35, -28), 
-                        (-6, -9, -4, 18, 13, 16, 5, 0), 
-                        (15, 25, 27, 45, 33, 28, 35, 19), 
-                        (60, 34, 62, 55, 67, 56, 29, 55), 
-                        (50, 56, 33, 37, 4, 33, 29, 35)), 
-                        'q': ((-42, -34, -36, -31, -13, -31, -30, -39), 
-                        (-38, -21, -15, -15, -19, 0, -18, -36), 
-                        (-27, -16, -11, -16, -11, -13, -6, -30), 
-                        (-22, -20, -10, -1, -5, -2, -15, -14), 
-                        (-6, -13, 20, 25, 17, 22, -16, 1), 
-                        (2, 43, 63, 72, 60, 32, 43, -2), 
-                        (24, 57, 76, 20, -10, 60, 32, 14), 
-                        (26, 88, 24, 69, -104, -8, 1, 6)), 
-                        'k': ((18, 40, -1, 6, -14, -3, 30, 17), 
-                        (4, 13, -18, -57, -50, -14, 3, -4), 
-                        (-32, -29, -32, -64, -79, -43, -42, -47), 
-                        (-50, -8, -47, -51, -28, -52, -43, -55), 
-                        (-49, 0, 13, -19, -4, 11, 50, -55), 
-                        (-31, 37, 28, -67, 44, -57, 12, -62), 
-                        (3, 10, 55, 56, 56, 55, 10, -32), 
-                        (-62, 83, 60, -99, -99, 47, 54, 4))}
+        self.letter_to_num = {'a': 0,
+                        'b': 1,
+                        'c': 2,
+                        'd': 3,
+                        'e': 4,
+                        'f': 5,
+                        'g': 6,
+                        'h': 7}
 
     def create_representation_for_eval(self, board): #translate board object into representation eval function needs
         fen = board.fen() #get FEN of board (a string representation of the board)
@@ -130,7 +90,7 @@ class ChessEngine:
 
         i = 0
         row = 0
-        numbers = [str(i + 1) for i in range(9)] #list of numbers from 1-8
+        numbers = [str(i + 1) for i in range(9)] #list of numbers from 0-8
         while fen[i] != ' ': #FEN has fields seperated by spaces.  Only the first field is needed so the loop ends when the first space is encountered
             if fen[i] == '/': #FEN seperates rows of the board with a '/'.  When a slash is encountered, row is incremented by one
                 row += 1
@@ -162,10 +122,10 @@ class ChessEngine:
     def eval(self, eval_board, board):
         if board.is_checkmate():
             if board.turn == False:
-                return -200000000
+                return -25000
 
             else:
-                return 200000000
+                return 25000
 
         elif board.is_stalemate():
             return self.contempt
@@ -174,7 +134,18 @@ class ChessEngine:
         for i in range(8):
             for j in range(8):
                 if eval_board[i][j] != ' ':
-                    evaluation += self.values[eval_board[i][j]]
+                    piece = eval_board[i][j]
+                    piece_eval = self.values[piece]
+                    if piece == piece.upper():
+                        piece_eval -= self.opst[piece][i][j] / 10
+
+                    else:
+                        piece_eval += self.opst[piece.upper()][7-i][j] / 10
+
+                    #(piece)
+                    #print(piece_eval)
+
+                    evaluation += piece_eval
 
         return evaluation
 
@@ -187,13 +158,32 @@ class ChessEngine:
             for entry in reader.find_all(board):
                 print(entry.move, entry.weight, entry.learn)
 
+    def search_captures(self, board, depth):
+        if depth == 0:
+            return self.eval(self.create_representation_for_eval(board))
+
+        moves = self.feed_moves(board) 
+        rep = self.create_representation_for_eval(board)
+        cap_moves = []
+
+        for i in range(len(moves)):
+            move = str(moves[i])
+            if board.turn == False:
+                if rep[self.move[3]][self.letter_to_num[self.move[2]]] != ' ':
+                    cap_moves.append(moves[i])
+          
+
     def alphabeta(self, board, depth, alpha, beta):
-        moves = self.feed_moves(board)
-        if depth == 0 or len(moves) == 0:
+        moves = self.feed_moves(board)   
+
+        if depth == 0:
+            return self.search_captures(board, 2)     
+
+        if len(moves) == 0:
             return self.eval(self.create_representation_for_eval(board), board)
         
         if board.turn == True:
-            max_eval = -225000000
+            max_eval = -25001
             for move in moves:
                 board.push(move)
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
@@ -206,7 +196,7 @@ class ChessEngine:
             return max_eval
 
         else:
-            min_eval = 225000000
+            min_eval = 25001
             for move in moves:
                 board.push(move)
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
@@ -223,9 +213,9 @@ class ChessEngine:
         evals = []
         for move in moves:
             board.push(move)
-            evals.append(self.alphabeta(self.board, self.initial_depth - 1,  -225000000,  225000000))
+            evals.append(self.alphabeta(board, self.initial_depth - 1,  -25002,  25002))
             board.pop()
-
+        print(evals)
         return moves[evals.index(max(evals))], max(evals)
 
     def run(self):
@@ -239,5 +229,6 @@ class ChessEngine:
 
 
 if __name__ == '__main__':
-    engine = ChessEngine(chess.Board(), 3, -10)
+    engine = ChessEngine(chess.Board(), 2, 5)
     print(engine.run())
+    #print(engine.eval(engine.create_representation_for_eval(chess.Board()), chess.Board()))
