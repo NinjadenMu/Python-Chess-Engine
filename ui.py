@@ -5,7 +5,7 @@ import time
 #from stockfish import Stockfish
 
 #create board object
-board = chess.Board('1q4k1/5pp1/2p3p1/K7/8/4n3/2r5/8 w - - 0 1')
+board = chess.Board()
 threads = int(input('How many threads may the engine use (should be less than cpu core count): '))
 chess_engine = ChessEngine(board, 4, 5, False, threads)
 ply = 4
