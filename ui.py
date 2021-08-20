@@ -7,8 +7,18 @@ import time
 #create board object
 board = chess.Board()
 threads = int(input('How many threads may the engine use (should be less than cpu core count): '))
-chess_engine = ChessEngine(board, 4, 5, False, threads)
-ply = 4
+
+if threads >= 16:
+    ply = 5
+
+elif threads >= 4:
+    ply = 4
+
+elif threads < 4:
+    ply = 3
+    
+chess_engine = ChessEngine(board, ply, 5, False, threads)
+
 #stockfish = Stockfish(parameters={"Threads": 2})
 
 print('Input moves in the format starting square to ending square.  Do not add symbols for takes/check.  Castle with starting pos of king and ending pos of king')
@@ -24,14 +34,14 @@ while board.outcome() == None: #repeat until the game reaches win/loss/draw
         engine_output = chess_engine.run()
         print('Time Taken: ' + str(time.perf_counter() - start))
 
-        if time.perf_counter() - start < 1:
+        if time.perf_counter() - start < 1 and engine_output[1] != 'BOOK':
             ply += 1
             chess_engine = ChessEngine(board, ply, 5, False, threads)
-        elif time.perf_counter() - start > 30.5:
+        elif time.perf_counter() - start > 30.1:
             ply -= 1
             chess_engine = ChessEngine(board, ply, 5, False, threads)
 
-        print('Engine Eval: ' + str(-engine_output[1] / 100))
+        print('Engine Eval: ' + str(engine_output[1]))
         #stockfish.set_fen_position(str(board.fen()))
         #board.push(chess.Move.from_uci(stockfish.get_best_move_time(1500)))
         board.push(engine_output[0])
