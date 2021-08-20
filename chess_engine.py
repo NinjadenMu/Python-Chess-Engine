@@ -24,7 +24,7 @@ class ChessEngine:
             'Q': -960,
             'K': -20000,
         }
-        self.opening = True
+        self.is_book = True
         self.opst = {
             'P': ((0,   0,   0,   0,   0,   0,   0,   0),
                 (78,  83,  86,  73, 102,  82,  85,  90),
@@ -155,9 +155,9 @@ class ChessEngine:
 
 
     def opening(self, board):
-        with chess.polyglot.open_reader("data/polyglot/performance.bin") as reader:
+        with chess.polyglot.open_reader("baron30.bin") as reader:
             for entry in reader.find_all(board):
-                print(entry.move, entry.weight, entry.learn)
+                return (entry.move, entry.weight, entry.learn)
 
     def search_captures(self, board, depth):
         if depth == 0:
@@ -219,6 +219,12 @@ class ChessEngine:
             return min_eval
 
     def choose_move(self, board):
+        if self.is_book:
+            if self.opening(board) == None:
+                self.is_opening = False
+            else:
+                return self.opening(board)[0], 'BOOK'
+
         moves = self.feed_moves(board)
         futures = []
         with concurrent.futures.ProcessPoolExecutor(self.threads) as executer:
@@ -229,8 +235,8 @@ class ChessEngine:
 
         concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
         evals = [future.result() for future in futures]
-        
-        return moves[evals.index(max(evals))], max(evals)
+
+        return moves[evals.index(max(evals))], -max(evals) / 100
 
     def run(self):
         return self.choose_move(self.board)
@@ -244,10 +250,11 @@ class ChessEngine:
 
 if __name__ == '__main__':
     engine = ChessEngine(chess.Board(), 4, 5, True)
-    try:
-        print(engine.run())
+    engine.opening(chess.Board('2bqkb2/7p/8/8/8/8/PP1P1P1P/R2QKB2 w Q - 0 2'))
+    #try:
+        #print(engine.run())
 
-    except:
-        pass
+    #except:
+        #pass
 
     #print(engine.eval(engine.create_representation_for_eval(chess.Board()), chess.Board()))
