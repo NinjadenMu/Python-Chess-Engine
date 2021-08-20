@@ -174,12 +174,37 @@ class ChessEngine:
           
 
     def alphabeta(self, board, depth, alpha, beta):
+        board_fen = board.fen()
+        new_fen = []
+        counter = 0
+        for i in range(len(board_fen)):
+            if board_fen[i] == ' ':
+                counter += 1
+
+            new_fen.append(board_fen[i])
+
+            if counter == 4:
+                break
+
+        if board.turn == True:
+            new_fen.append('0')
+            new_fen.append(' ')
+            new_fen.append('1')
+
+        else:
+            new_fen.append('1')
+            new_fen.append(' ')
+            new_fen.append('1')
+
+        board = chess.Board(''.join(new_fen))
+        #print(depth)
         moves = self.feed_moves(board)   
 
         if depth == 0:
-            return self.search_captures(board, 2)     
+            #return self.search_captures(board, 2)     
+            return self.eval(self.create_representation_for_eval(board), board)
 
-        if len(moves) == 0:
+        elif len(moves) == 0:
             return self.eval(self.create_representation_for_eval(board), board)
         
         if board.turn == True:
@@ -202,7 +227,7 @@ class ChessEngine:
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
                 board.pop()
                 min_eval = min(min_eval, evaluation)
-                alpha = min(beta, evaluation)
+                beta = min(beta, evaluation)
                 if beta <= alpha:
                     break
 
@@ -215,7 +240,7 @@ class ChessEngine:
             board.push(move)
             evals.append(self.alphabeta(board, self.initial_depth - 1,  -25002,  25002))
             board.pop()
-        print(evals)
+
         return moves[evals.index(max(evals))], max(evals)
 
     def run(self):
@@ -229,6 +254,13 @@ class ChessEngine:
 
 
 if __name__ == '__main__':
-    engine = ChessEngine(chess.Board(), 2, 5)
-    print(engine.run())
+    engine = ChessEngine(chess.Board('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'), 3, 5)
+    try:
+        print(engine.run())
+
+    except:
+        pass
+
+
+
     #print(engine.eval(engine.create_representation_for_eval(chess.Board()), chess.Board()))
