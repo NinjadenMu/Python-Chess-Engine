@@ -174,30 +174,6 @@ class ChessEngine:
           
 
     def alphabeta(self, board, depth, alpha, beta):
-        board_fen = board.fen()
-        new_fen = []
-        counter = 0
-        for i in range(len(board_fen)):
-            if board_fen[i] == ' ':
-                counter += 1
-
-            new_fen.append(board_fen[i])
-
-            if counter == 4:
-                break
-
-        if board.turn == True:
-            new_fen.append('0')
-            new_fen.append(' ')
-            new_fen.append('1')
-
-        else:
-            new_fen.append('1')
-            new_fen.append(' ')
-            new_fen.append('1')
-
-        board = chess.Board(''.join(new_fen))
-        #print(depth)
         moves = self.feed_moves(board)   
 
         if depth == 0:
@@ -207,7 +183,7 @@ class ChessEngine:
         elif len(moves) == 0:
             return self.eval(self.create_representation_for_eval(board), board)
         
-        if board.turn == True:
+        if board.turn == False:
             max_eval = -25001
             for move in moves:
                 board.push(move)
@@ -254,13 +230,11 @@ class ChessEngine:
 
 
 if __name__ == '__main__':
-    engine = ChessEngine(chess.Board('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'), 3, 5)
+    engine = ChessEngine(chess.Board('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'), 4, 5)
     try:
         print(engine.run())
 
     except:
         pass
-
-
 
     #print(engine.eval(engine.create_representation_for_eval(chess.Board()), chess.Board()))
