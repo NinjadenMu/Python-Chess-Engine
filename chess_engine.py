@@ -2,10 +2,11 @@
 import chess
 import copy
 import chess.polyglot
+import concurrent.futures
 
 #Engine class, all functions are contained here
 class ChessEngine:
-    def __init__(self, board, depth, contempt): #makes board object and depth (int) attributes
+    def __init__(self, board, depth, contempt, turn, threads = 1): #makes board object and depth (int) attributes
         self.board = board
         self.initial_depth = depth #measured in ply
         self.contempt = contempt
@@ -83,6 +84,8 @@ class ChessEngine:
                         'f': 5,
                         'g': 6,
                         'h': 7}
+        self.turn = turn
+        self.threads = threads
 
     def create_representation_for_eval(self, board): #translate board object into representation eval function needs
         fen = board.fen() #get FEN of board (a string representation of the board)
@@ -142,16 +145,14 @@ class ChessEngine:
                     else:
                         piece_eval += self.opst[piece.upper()][7-i][j] / 10
 
-                    #(piece)
-                    #print(piece_eval)
-
                     evaluation += piece_eval
 
         return evaluation
 
     def feed_moves(self, board): #find possible moves and order them to increase efficiency of alpha-beta pruning
-        possible_moves = board.legal_moves
-        return list(possible_moves)
+        possible_moves = list(board.legal_moves)
+        return possible_moves
+
 
     def opening(self, board):
         with chess.polyglot.open_reader("data/polyglot/performance.bin") as reader:
@@ -174,7 +175,8 @@ class ChessEngine:
           
 
     def alphabeta(self, board, depth, alpha, beta):
-        moves = self.feed_moves(board)   
+        #moves = self.feed_moves(board)   
+        moves = list(board.legal_moves)
 
         if depth == 0:
             #return self.search_captures(board, 2)     
@@ -211,12 +213,15 @@ class ChessEngine:
 
     def choose_move(self, board):
         moves = self.feed_moves(board)
-        evals = []
-        for move in moves:
-            board.push(move)
-            evals.append(self.alphabeta(board, self.initial_depth - 1,  -25002,  25002))
-            board.pop()
+        futures = []
+        with concurrent.futures.ProcessPoolExecutor(self.threads) as executer:
+            for move in moves:
+                board.push(move)
+                futures.append(executer.submit(self.alphabeta, copy.deepcopy(board), self.initial_depth - 1,  -25002,  25002))
+                board.pop()
 
+        concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
+        evals = [future.result() for future in futures]
         return moves[evals.index(max(evals))], max(evals)
 
     def run(self):
@@ -230,7 +235,7 @@ class ChessEngine:
 
 
 if __name__ == '__main__':
-    engine = ChessEngine(chess.Board('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'), 4, 5)
+    engine = ChessEngine(chess.Board(), 4, 5, True)
     try:
         print(engine.run())
 
