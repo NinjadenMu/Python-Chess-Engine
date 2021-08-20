@@ -130,7 +130,7 @@ class ChessEngine:
             else:
                 return 25000
 
-        elif board.is_stalemate():
+        elif board.is_stalemate() or len(list(board.legal_moves)) == 0:
             return self.contempt
 
         evaluation = 0
@@ -182,8 +182,15 @@ class ChessEngine:
             #return self.search_captures(board, 2)     
             return self.eval(self.create_representation_for_eval(board), board)
 
-        elif len(moves) == 0:
-            return self.eval(self.create_representation_for_eval(board), board)
+        elif board.is_checkmate():
+            if board.turn == False:
+                return -25000 - depth
+
+            else:
+                return 25000 + depth
+
+        elif board.is_stalemate() or len(list(board.legal_moves)) == 0:
+            return self.contempt
         
         if board.turn == False:
             max_eval = -25001
@@ -222,6 +229,7 @@ class ChessEngine:
 
         concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
         evals = [future.result() for future in futures]
+        
         return moves[evals.index(max(evals))], max(evals)
 
     def run(self):
