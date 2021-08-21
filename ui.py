@@ -5,7 +5,7 @@ import time
 #from stockfish import Stockfish
 
 #create board object
-board = chess.Board()
+board = chess.Board('6k1/8/Qp4P1/8/5K2/8/8/8 w - - 0 1')
 threads = int(input('How many threads may the engine use (should be less than cpu core count): '))
 
 if threads >= 16:
@@ -16,7 +16,7 @@ elif threads >= 4:
 
 elif threads < 4:
     ply = 3
-    
+
 chess_engine = ChessEngine(board, ply, 5, False, threads)
 
 #stockfish = Stockfish(parameters={"Threads": 2})
@@ -30,21 +30,22 @@ while board.outcome() == None: #repeat until the game reaches win/loss/draw
     if move in [str(legal_move) for legal_move in list(board.legal_moves)]: #check if move is legal
         move = chess.Move.from_uci(move) #Convert input string to Move object
         board.push(move) #make move
-        start = time.perf_counter()
-        engine_output = chess_engine.run()
-        print('Time Taken: ' + str(time.perf_counter() - start))
+        if len(list(board.legal_moves)) != 0:
+            start = time.perf_counter()
+            engine_output = chess_engine.run()
+            print('Time Taken: ' + str(time.perf_counter() - start))
 
-        if time.perf_counter() - start < 1 and engine_output[1] != 'BOOK':
-            ply += 1
-            chess_engine = ChessEngine(board, ply, 5, False, threads)
-        elif time.perf_counter() - start > 30.1:
-            ply -= 1
-            chess_engine = ChessEngine(board, ply, 5, False, threads)
+            if time.perf_counter() - start < 1 and engine_output[1] != 'BOOK':
+                ply += 1
+                chess_engine = ChessEngine(board, ply, 5, False, threads)
+            elif time.perf_counter() - start > 30.1:
+                ply -= 1
+                chess_engine = ChessEngine(board, ply, 5, False, threads)
 
-        print('Engine Eval: ' + str(engine_output[1]))
-        #stockfish.set_fen_position(str(board.fen()))
-        #board.push(chess.Move.from_uci(stockfish.get_best_move_time(1500)))
-        board.push(engine_output[0])
+            print('Engine Eval: ' + str(engine_output[1]))
+            #stockfish.set_fen_position(str(board.fen()))
+            #board.push(chess.Move.from_uci(stockfish.get_best_move_time(1500)))
+            board.push(engine_output[0])
     
     else: #if move is not legal
         print('Invalid Move')
