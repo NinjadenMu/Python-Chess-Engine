@@ -193,7 +193,7 @@ class ChessEngine:
             return self.contempt
         
         if board.turn == False:
-            max_eval = -25001
+            max_eval = -25050
             for move in moves:
                 board.push(move)
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
@@ -206,7 +206,7 @@ class ChessEngine:
             return max_eval
 
         else:
-            min_eval = 25001
+            min_eval = 25050
             for move in moves:
                 board.push(move)
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
@@ -230,13 +230,14 @@ class ChessEngine:
         with concurrent.futures.ProcessPoolExecutor(self.threads) as executer:
             for move in moves:
                 board.push(move)
-                futures.append(executer.submit(self.alphabeta, copy.deepcopy(board), self.initial_depth - 1,  -25002,  25002))
+                futures.append(executer.submit(self.alphabeta, copy.deepcopy(board), self.initial_depth - 1,  -25051,  25051))
                 board.pop()
 
         concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
         evals = [future.result() for future in futures]
-
+        
         return moves[evals.index(max(evals))], -max(evals) / 100
+
 
     def run(self):
         return self.choose_move(self.board)
