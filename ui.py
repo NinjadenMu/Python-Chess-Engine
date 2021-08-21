@@ -5,7 +5,7 @@ import time
 #from stockfish import Stockfish
 
 #create board object
-board = chess.Board('6k1/8/Qp4P1/8/5K2/8/8/8 w - - 0 1')
+board = chess.Board()
 threads = int(input('How many threads may the engine use (should be less than cpu core count): '))
 
 if threads >= 16:
@@ -23,6 +23,7 @@ chess_engine = ChessEngine(board, ply, 5, False, threads)
 
 print('Input moves in the format starting square to ending square.  Do not add symbols for takes/check.  Castle with starting pos of king and ending pos of king')
 while board.outcome() == None: #repeat until the game reaches win/loss/draw
+    print(ply)
     print(board) #display board (needs to be printed each iteration of loop because board changes)
     print('a b c d e f g h') #add letters under board
     move = input('Your Move: ') #ask for human move
@@ -35,7 +36,7 @@ while board.outcome() == None: #repeat until the game reaches win/loss/draw
             engine_output = chess_engine.run()
             print('Time Taken: ' + str(time.perf_counter() - start))
 
-            if time.perf_counter() - start < 1 and engine_output[1] != 'BOOK':
+            if time.perf_counter() - start < 2 and engine_output[1] != 'BOOK':
                 ply += 1
                 chess_engine = ChessEngine(board, ply, 5, False, threads)
             elif time.perf_counter() - start > 30.1:
@@ -43,9 +44,14 @@ while board.outcome() == None: #repeat until the game reaches win/loss/draw
                 chess_engine = ChessEngine(board, ply, 5, False, threads)
 
             print('Engine Eval: ' + str(engine_output[1]))
+            print('Engine Move: ' + str(engine_output[0]))
             #stockfish.set_fen_position(str(board.fen()))
             #board.push(chess.Move.from_uci(stockfish.get_best_move_time(1500)))
-            board.push(engine_output[0])
+            if engine_output[0] != 'Engine claimed draw by 3-fold repetition or 50-move rule':
+                board.push(engine_output[0])
+            else:
+                print(engine_output[0])
+                break
     
     else: #if move is not legal
         print('Invalid Move')
