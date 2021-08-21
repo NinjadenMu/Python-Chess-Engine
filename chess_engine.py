@@ -87,6 +87,7 @@ class ChessEngine:
         self.turn = turn
         self.threads = threads
         self.is_claiming_draw = False
+        self.transposition_table = {}
 
     def create_representation_for_eval(self, board): #translate board object into representation eval function needs
         fen = board.fen() #get FEN of board (a string representation of the board)
@@ -197,7 +198,14 @@ class ChessEngine:
             max_eval = -25050
             for move in moves:
                 board.push(move)
-                evaluation = self.alphabeta(board, depth - 1, alpha, beta)
+
+                hash = chess.polyglot.zobrist_hash(board)
+                if hash in self.transposition_table:
+                    evaluation = self.transposition_table[hash]
+
+                else:
+                    evaluation = self.alphabeta(board, depth - 1, alpha, beta)
+
                 board.pop()
                 max_eval = max(max_eval, evaluation)
 
@@ -215,7 +223,14 @@ class ChessEngine:
             min_eval = 25050
             for move in moves:
                 board.push(move)
-                evaluation = self.alphabeta(board, depth - 1, alpha, beta)
+
+                hash = chess.polyglot.zobrist_hash(board)
+                if hash in self.transposition_table:
+                    evaluation = self.transposition_table[hash]
+
+                else:
+                    evaluation = self.alphabeta(board, depth - 1, alpha, beta)
+
                 board.pop()
                 min_eval = min(min_eval, evaluation)
 
@@ -237,10 +252,17 @@ class ChessEngine:
 
         moves = self.feed_moves(board)
         futures = []
+
         with concurrent.futures.ProcessPoolExecutor(self.threads) as executer:
             for move in moves:
                 board.push(move)
-                futures.append(executer.submit(self.alphabeta, copy.deepcopy(board), self.initial_depth - 1,  -25051,  25051))
+                hash = chess.polyglot.zobrist_hash(board)
+                if hash in self.transposition_table:
+                    futures.append(executer.submit(lambda: self.transposition_table[hash]))
+
+                else:
+                    futures.append(executer.submit(self.alphabeta, copy.deepcopy(board), self.initial_depth - 1,  -25051,  25051))
+
                 board.pop()
 
         concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
@@ -253,6 +275,8 @@ class ChessEngine:
         else:
             moves[0] = 'Engine claimed draw by 3-fold repetition or 50-move rule'
 
+        self.transposition_table[chess.polyglot.zobrist_hash(board)] = max(evals)
+        
         return moves[evals.index(max(evals))], -max(evals) / 100
 
 
