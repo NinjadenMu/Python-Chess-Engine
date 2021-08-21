@@ -86,6 +86,7 @@ class ChessEngine:
                         'h': 7}
         self.turn = turn
         self.threads = threads
+        self.is_claiming_draw = False
 
     def create_representation_for_eval(self, board): #translate board object into representation eval function needs
         fen = board.fen() #get FEN of board (a string representation of the board)
@@ -93,12 +94,12 @@ class ChessEngine:
 
         i = 0
         row = 0
-        numbers = [str(i + 1) for i in range(9)] #list of numbers from 0-8
+
         while fen[i] != ' ': #FEN has fields seperated by spaces.  Only the first field is needed so the loop ends when the first space is encountered
             if fen[i] == '/': #FEN seperates rows of the board with a '/'.  When a slash is encountered, row is incremented by one
                 row += 1
 
-            elif fen[i] not in numbers: #If fen[i] is not '/' or a number, then it is a piece.  Pieces are appended to their row
+            elif not fen[i].isdecimal(): #If fen[i] is not '/' or a number, then it is a piece.  Pieces are appended to their row
                 eval_board[row].append(fen[i])
 
             else: #Handles numbers which represent empty squares in FEN.  
@@ -122,7 +123,7 @@ class ChessEngine:
 
     """
 
-    def eval(self, eval_board, board):
+    def eval(self, eval_board, board, moves):
         if board.is_checkmate():
             if board.turn == False:
                 return -25000
@@ -130,7 +131,7 @@ class ChessEngine:
             else:
                 return 25000
 
-        elif board.is_stalemate() or len(list(board.legal_moves)) == 0:
+        elif len(moves) == 0:
             return self.contempt
 
         evaluation = 0
@@ -140,10 +141,10 @@ class ChessEngine:
                     piece = eval_board[i][j]
                     piece_eval = self.values[piece]
                     if piece == piece.upper():
-                        piece_eval -= self.opst[piece][i][j] / 10
+                        piece_eval -= self.opst[piece][i][j]
 
                     else:
-                        piece_eval += self.opst[piece.upper()][7-i][j] / 10
+                        piece_eval += self.opst[piece.upper()][7-i][j]
 
                     evaluation += piece_eval
 
@@ -180,16 +181,16 @@ class ChessEngine:
 
         if depth == 0:
             #return self.search_captures(board, 2)     
-            return self.eval(self.create_representation_for_eval(board), board)
+            return self.eval(self.create_representation_for_eval(board), board, moves)
 
-        elif board.is_checkmate():
-            if board.turn == False:
-                return -25000 - depth
+        elif len(moves) == 0:
+            if board.is_checkmate():
+                if board.turn == False:
+                    return -25000 - depth
 
-            else:
-                return 25000 + depth
+                else:
+                    return 25000 + depth
 
-        elif board.is_stalemate() or len(list(board.legal_moves)) == 0:
             return self.contempt
         
         if board.turn == False:
@@ -199,6 +200,11 @@ class ChessEngine:
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
                 board.pop()
                 max_eval = max(max_eval, evaluation)
+
+                if self.contempt > max_eval and board.can_claim_draw():
+                    max_eval = self.contempt
+                    self.is_claiming_draw = True
+
                 alpha = max(alpha, evaluation)
                 if beta <= alpha:
                     break
@@ -212,6 +218,10 @@ class ChessEngine:
                 evaluation = self.alphabeta(board, depth - 1, alpha, beta)
                 board.pop()
                 min_eval = min(min_eval, evaluation)
+
+                if self.contempt < min_eval and board.can_claim_draw():
+                    min_eval = self.contempt
+
                 beta = min(beta, evaluation)
                 if beta <= alpha:
                     break
@@ -235,7 +245,14 @@ class ChessEngine:
 
         concurrent.futures.wait(futures, return_when=concurrent.futures.ALL_COMPLETED)
         evals = [future.result() for future in futures]
-        
+        output = (moves[evals.index(max(evals))], -max(evals) / 100)
+
+        if -output[1] != self.contempt:
+            self.is_claiming_draw = False
+
+        else:
+            moves[0] = 'Engine claimed draw by 3-fold repetition or 50-move rule'
+
         return moves[evals.index(max(evals))], -max(evals) / 100
 
 
@@ -251,11 +268,3 @@ class ChessEngine:
 
 if __name__ == '__main__':
     engine = ChessEngine(chess.Board(), 4, 5, True)
-    engine.opening(chess.Board('2bqkb2/7p/8/8/8/8/PP1P1P1P/R2QKB2 w Q - 0 2'))
-    #try:
-        #print(engine.run())
-
-    #except:
-        #pass
-
-    #print(engine.eval(engine.create_representation_for_eval(chess.Board()), chess.Board()))
