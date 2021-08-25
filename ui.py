@@ -6,7 +6,13 @@ import time
 
 #create board object
 board = chess.Board()
-threads = int(input('How many threads may the engine use (should be less than cpu core count): '))
+
+while True:
+    try:
+        threads = int(input('How many threads may the engine use (should be less than cpu core count): '))
+        break
+    except:
+        print('Not a valid input.  Please input a positive integer.')
 
 if threads >= 16:
     ply = 5
