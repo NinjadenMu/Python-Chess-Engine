@@ -153,7 +153,42 @@ class ChessEngine:
 
     def feed_moves(self, board): #find possible moves and order them to increase efficiency of alpha-beta pruning
         possible_moves = list(board.legal_moves)
-        return possible_moves
+        ordered_moves = []
+        
+        for move in possible_moves:
+            piece = str(board.piece_at(move.from_square))
+            move_weight = 0
+            if board.piece_at(move.to_square) != None:
+                if board.turn == False:
+                    move_weight = -self.values[str(board.piece_at(move.to_square))] - self.values[piece]
+                
+                else:
+                    move_weight = self.values[str(board.piece_at(move.to_square))] + self.values[piece]
+
+            if move.promotion != None:
+                move_weight += 800
+
+            to_square = str(chess.square_name(move.to_square))
+            from_square = str(chess.square_name(move.from_square))
+            to_square_row = int(to_square[1]) - 1
+            to_square_col = self.letter_to_num[to_square[0]] - 1
+            from_square_row = int(from_square[1]) - 1
+            from_square_col = self.letter_to_num[from_square[0]] - 1
+
+            if board.turn == False:
+                move_weight += self.opst[piece.upper()][7 - to_square_row][to_square_col] - self.opst[piece.upper()][7 - from_square_row][from_square_col]
+
+            else:
+                move_weight += self.opst[piece][to_square_row][to_square_col] - self.opst[piece][from_square_row][from_square_col]
+
+            ordered_moves.append((move_weight, move))
+
+        ordered_moves = sorted(ordered_moves, key = lambda x: x[0])
+
+        for i in range(len(ordered_moves)):
+            ordered_moves[i] = ordered_moves[i][1]
+            
+        return ordered_moves
 
 
     def opening(self, board):
@@ -201,6 +236,7 @@ class ChessEngine:
 
                 hash = chess.polyglot.zobrist_hash(board)
                 if hash in self.transposition_table:
+                    
                     evaluation = self.transposition_table[hash]
 
                 else:
@@ -208,11 +244,12 @@ class ChessEngine:
 
                 board.pop()
                 max_eval = max(max_eval, evaluation)
-
-                if self.contempt > max_eval and board.can_claim_draw():
-                    max_eval = self.contempt
-                    self.is_claiming_draw = True
-
+                """
+                if self.contempt > max_eval:
+                    if board.can_claim_draw():
+                        max_eval = self.contempt
+                        self.is_claiming_draw = True
+                """
                 alpha = max(alpha, evaluation)
                 if beta <= alpha:
                     break
@@ -233,10 +270,11 @@ class ChessEngine:
 
                 board.pop()
                 min_eval = min(min_eval, evaluation)
-
-                if self.contempt < min_eval and board.can_claim_draw():
-                    min_eval = self.contempt
-
+                """
+                if self.contempt < min_eval:
+                    if board.can_claim_draw():
+                        min_eval = self.contempt
+                """
                 beta = min(beta, evaluation)
                 if beta <= alpha:
                     break
@@ -250,7 +288,8 @@ class ChessEngine:
             else:
                 return self.opening(board)[0], 'BOOK'
 
-        moves = self.feed_moves(board)
+        #moves = self.feed_moves(board)
+        moves = list(board.legal_moves)
         futures = []
 
         with concurrent.futures.ProcessPoolExecutor(self.threads) as executer:
@@ -292,3 +331,4 @@ class ChessEngine:
 
 if __name__ == '__main__':
     engine = ChessEngine(chess.Board(), 4, 5, True)
+    print(engine.feed_moves(chess.Board()))
