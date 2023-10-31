@@ -250,7 +250,7 @@ class ChessEngine:
                         max_eval = self.contempt
                         self.is_claiming_draw = True
                 """
-                alpha = max(alpha, evaluation)
+                alpha = max(alpha, max_eval)
                 if beta <= alpha:
                     break
 
@@ -275,7 +275,7 @@ class ChessEngine:
                     if board.can_claim_draw():
                         min_eval = self.contempt
                 """
-                beta = min(beta, evaluation)
+                beta = min(beta, min_eval)
                 if beta <= alpha:
                     break
 
